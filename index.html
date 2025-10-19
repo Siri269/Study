@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus & Learn - Transform Your Mind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://unpkg.com/splitting@1.0.6/dist/splitting.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1d29;
+            --secondary: #ff6b6b;
+            --accent: #4ecdc4;
+            --neutral: #f8f9fa;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, #2d3748 50%, var(--primary) 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes pulse-glow {
+            from { box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+            to { box-shadow: 0 0 30px rgba(255, 107, 107, 0.6); }
+        }
+        
+        .achievement-card {
+            transition: all 0.3s ease;
+        }
+        
+        .achievement-card:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+        
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(26, 29, 41, 0.9);
+        }
+        
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .timer-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .xp-bar {
+            background: linear-gradient(90deg, var(--accent) 0%, var(--secondary) 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Particle Background -->
+    <div id="particles-canvas"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 nav-blur">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-coral-400 to-accent-400 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">F&L</span>
+                    </div>
+                    <span class="text-white font-semibold text-lg">Focus & Learn</span>
+                </div>
+                <div class="flex space-x-8">
+                    <a href="index.html" class="text-white font-medium border-b-2 border-secondary px-1 py-2">Dashboard</a>
+                    <a href="sat-prep.html" class="text-gray-300 hover:text-white transition-colors px-1 py-2">SAT Prep</a>
+                    <a href="brain-games.html" class="text-gray-300 hover:text-white transition-colors px-1 py-2">Brain Games</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-24 pb-12 hero-gradient relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="text-white">
+                    <h1 class="text-5xl lg:text-6xl font-bold mb-6 leading-tight" data-splitting>
+                        Transform Your Mind
+                    </h1>
+                    <p class="text-xl text-gray-300 mb-8 leading-relaxed">
+                        Escape digital distractions and unlock your potential with addictive learning experiences designed to make you smarter, faster, and more focused.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="startFocusSession()" class="bg-secondary hover:bg-red-500 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 pulse-glow">
+                            Start Focus Session
+                        </button>
+                        <button onclick="scrollToSection('features')" class="glass-effect text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:bg-opacity-20 transition-all duration-300">
+                            Explore Features
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img src="resources/hero-brain.png" alt="Brain Network" class="w-full h-auto floating">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 transform rotate-45 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Progress Dashboard -->
+    <section id="features" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Your Learning Journey</h2>
+                <p class="text-xl text-gray-600">Track your progress and celebrate your achievements</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <!-- Daily Progress -->
+                <div class="glass-effect rounded-2xl p-8 text-center">
+                    <div class="relative w-32 h-32 mx-auto mb-6">
+                        <svg class="w-32 h-32 progress-ring">
+                            <circle cx="64" cy="64" r="56" stroke="#e2e8f0" stroke-width="8" fill="none"/>
+                            <circle id="daily-progress" cx="64" cy="64" r="56" stroke="var(--secondary)" stroke-width="8" fill="none" 
+                                    stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="175.93"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="daily-percentage" class="text-2xl font-bold text-gray-900">50%</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Daily Goal</h3>
+                    <p class="text-gray-600">25 minutes of focused learning</p>
+                </div>
+
+                <!-- Weekly Streak -->
+                <div class="glass-effect rounded-2xl p-8 text-center">
+                    <div class="relative w-32 h-32 mx-auto mb-6">
+                        <svg class="w-32 h-32 progress-ring">
+                            <circle cx="64" cy="64" r="56" stroke="#e2e8f0" stroke-width="8" fill="none"/>
+                            <circle id="weekly-progress" cx="64" cy="64" r="56" stroke="var(--accent)" stroke-width="8" fill="none" 
+                                    stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="87.97"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-3xl font-bold text-gray-900">7</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Day Streak</h3>
+                    <p class="text-gray-600">Keep the momentum going!</p>
+                </div>
+
+                <!-- Total XP -->
+                <div class="glass-effect rounded-2xl p-8 text-center">
+                    <div class="text-5xl font-bold text-secondary mb-4" id="total-xp">2,450</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="xp-bar rounded-full" style="width: 65%"></div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Level 12</h3>
+                    <p class="text-gray-600">650 XP to next level</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Access Cards -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Choose Your Focus</h2>
+                <p class="text-xl text-gray-600">Select an activity to begin your learning session</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- SAT Prep Card -->
+                <div class="achievement-card bg-white rounded-2xl p-8 shadow-lg">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl font-bold">SAT</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">SAT Preparation</h3>
+                    <p class="text-gray-600 mb-6">Master reading comprehension and mathematics with adaptive practice questions and instant feedback.</p>
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-sm text-gray-500">Progress: 68%</span>
+                        <div class="w-24 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: 68%"></div>
+                        </div>
+                    </div>
+                    <button onclick="window.location.href='sat-prep.html'" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                        Start SAT Prep
+                    </button>
+                </div>
+
+                <!-- Brain Games Card -->
+                <div class="achievement-card bg-white rounded-2xl p-8 shadow-lg">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">🧠</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Brain Training</h3>
+                    <p class="text-gray-600 mb-6">Challenge your mind with addictive cognitive games designed to improve memory, focus, and problem-solving.</p>
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-sm text-gray-500">High Score: 12,450</span>
+                        <span class="text-sm font-semibold text-green-600">+2,100 this week</span>
+                    </div>
+                    <button onclick="window.location.href='brain-games.html'" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                        Play Brain Games
+                    </button>
+                </div>
+
+                <!-- Focus Timer Card -->
+                <div class="achievement-card bg-white rounded-2xl p-8 shadow-lg">
+                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">⏱️</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Focus Timer</h3>
+                    <p class="text-gray-600 mb-6">Stay focused with customizable Pomodoro sessions and ambient sounds for deep concentration.</p>
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-sm text-gray-500">Today's Focus: 2h 15m</span>
+                        <span class="text-sm font-semibold text-orange-600">5 sessions completed</span>
+                    </div>
+                    <button onclick="startFocusTimer()" class="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                        Start Focus Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Achievement Showcase -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Recent Achievements</h2>
+                <p class="text-xl text-gray-600">Celebrate your learning milestones</p>
+            </div>
+            
+            <div class="splide" id="achievement-carousel">
+                <div class="splide__track">
+                    <ul class="splide__list">
+                        <li class="splide__slide">
+                            <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-white text-center">
+                                <div class="text-4xl mb-4">⚡</div>
+                                <h3 class="text-xl font-bold mb-2">Speed Demon</h3>
+                                <p class="text-sm opacity-90">Completed 10 questions in under 5 minutes</p>
+                                <div class="mt-4 text-xs opacity-75">Earned 2 hours ago</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white text-center">
+                                <div class="text-4xl mb-4">🔥</div>
+                                <h3 class="text-xl font-bold mb-2">Week Warrior</h3>
+                                <p class="text-sm opacity-90">Maintained a 7-day learning streak</p>
+                                <div class="mt-4 text-xs opacity-75">Earned yesterday</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 text-white text-center">
+                                <div class="text-4xl mb-4">🎯</div>
+                                <h3 class="text-xl font-bold mb-2">Precision Master</h3>
+                                <p class="text-sm opacity-90">Achieved 95% accuracy in SAT Math</p>
+                                <div class="mt-4 text-xs opacity-75">Earned 3 days ago</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-6 text-white text-center">
+                                <div class="text-4xl mb-4">🏆</div>
+                                <h3 class="text-xl font-bold mb-2">Champion</h3>
+                                <p class="text-sm opacity-90">Reached the top 10% in Brain Games</p>
+                                <div class="mt-4 text-xs opacity-75">Earned 1 week ago</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Focus Timer Modal -->
+    <div id="focus-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6">Focus Session</h3>
+                <div class="relative w-48 h-48 mx-auto mb-6">
+                    <svg class="w-48 h-48 transform -rotate-90">
+                        <circle cx="96" cy="96" r="88" stroke="#e2e8f0" stroke-width="8" fill="none"/>
+                        <circle id="timer-progress" cx="96" cy="96" r="88" stroke="var(--secondary)" stroke-width="8" fill="none" 
+                                stroke-linecap="round" class="timer-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-center">
+                            <div id="timer-display" class="text-3xl font-bold text-gray-900">25:00</div>
+                            <div class="text-sm text-gray-600 mt-1">Focus Time</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button id="timer-start" onclick="startTimer()" class="flex-1 bg-secondary text-white py-3 rounded-xl font-semibold">
+                        Start
+                    </button>
+                    <button id="timer-pause" onclick="pauseTimer()" class="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hidden">
+                        Pause
+                    </button>
+                    <button onclick="closeFocusModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-gray-400">© 2025 Focus & Learn. Designed to help you unlock your potential.</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
