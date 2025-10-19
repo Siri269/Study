@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Training Games - Focus & Learn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1d29;
+            --secondary: #ff6b6b;
+            --accent: #4ecdc4;
+            --neutral: #f8f9fa;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(26, 29, 41, 0.9);
+        }
+        
+        .game-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .game-container {
+            display: none;
+        }
+        
+        .game-container.active {
+            display: block;
+        }
+        
+        .memory-card {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            user-select: none;
+        }
+        
+        .memory-card.flipped {
+            background: white;
+            color: #333;
+            transform: rotateY(180deg);
+        }
+        
+        .memory-card.matched {
+            background: #4ade80;
+            color: white;
+            cursor: default;
+        }
+        
+        .math-problem {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 2rem 0;
+            color: #1f2937;
+        }
+        
+        .answer-input {
+            font-size: 1.5rem;
+            text-align: center;
+            border: 3px solid #d1d5db;
+            border-radius: 12px;
+            padding: 1rem;
+            width: 200px;
+            transition: all 0.3s ease;
+        }
+        
+        .answer-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .answer-input.correct {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        
+        .answer-input.incorrect {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        
+        .letter-tile {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+        
+        .letter-tile:hover {
+            background: #f3f4f6;
+            transform: scale(1.05);
+        }
+        
+        .letter-tile.used {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .word-slot {
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background: #f9fafb;
+        }
+        
+        .word-slot.filled {
+            border-style: solid;
+            background: white;
+            border-color: #3b82f6;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-float 2s ease-out forwards;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0);
+            }
+        }
+        
+        .score-animation {
+            animation: score-bump 0.3s ease-out;
+        }
+        
+        @keyframes score-bump {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .streak-fire {
+            animation: fire-flicker 0.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes fire-flicker {
+            0% { transform: scale(1) rotate(-1deg); }
+            100% { transform: scale(1.05) rotate(1deg); }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 nav-blur">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-coral-400 to-accent-400 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">F&L</span>
+                    </div>
+                    <span class="text-white font-semibold text-lg">Focus & Learn</span>
+                </div>
+                <div class="flex space-x-8">
+                    <a href="index.html" class="text-gray-300 hover:text-white transition-colors px-1 py-2">Dashboard</a>
+                    <a href="sat-prep.html" class="text-gray-300 hover:text-white transition-colors px-1 py-2">SAT Prep</a>
+                    <a href="brain-games.html" class="text-white font-medium border-b-2 border-secondary px-1 py-2">Brain Games</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="pt-24 pb-8 bg-gradient-to-r from-green-600 to-teal-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-white">
+                <h1 class="text-4xl lg:text-5xl font-bold mb-4">Brain Training Games</h1>
+                <p class="text-xl text-green-100 mb-8">Challenge your mind with addictive cognitive exercises</p>
+                
+                <!-- Current Session Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                    <div class="glass-effect rounded-xl p-4">
+                        <div class="text-2xl font-bold mb-1" id="current-score">0</div>
+                        <div class="text-sm text-green-100">Current Score</div>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4">
+                        <div class="text-2xl font-bold mb-1" id="high-score">12,450</div>
+                        <div class="text-sm text-green-100">High Score</div>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4">
+                        <div class="text-2xl font-bold mb-1 flex items-center justify-center">
+                            <span id="streak-count">0</span>
+                            <span class="ml-1 text-lg streak-fire">🔥</span>
+                        </div>
+                        <div class="text-sm text-green-100">Streak</div>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4">
+                        <div class="text-2xl font-bold mb-1" id="level-display">1</div>
+                        <div class="text-sm text-green-100">Level</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Game Selection -->
+    <section id="game-selection" class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Challenge</h2>
+                <p class="text-xl text-gray-600">Select a game to start training your brain</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Memory Palace Game -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg" onclick="startGame('memory')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">🧠</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Memory Palace</h3>
+                    <p class="text-gray-600 mb-6">Test your pattern recognition and memory skills with increasingly complex sequences.</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Best Score: 2,840</span>
+                        <span class="text-sm font-semibold text-purple-600">Level 12</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="bg-purple-500 h-2 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: Memory • Attention • Pattern Recognition</div>
+                </div>
+
+                <!-- Speed Math Game -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg" onclick="startGame('math')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">⚡</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Speed Math</h3>
+                    <p class="text-gray-600 mb-6">Rapid-fire arithmetic challenges that improve calculation speed and accuracy.</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Best Score: 1,960</span>
+                        <span class="text-sm font-semibold text-blue-600">Level 8</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: 60%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: Calculation • Speed • Accuracy</div>
+                </div>
+
+                <!-- Word Builder Game -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg" onclick="startGame('words')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">📝</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Word Builder</h3>
+                    <p class="text-gray-600 mb-6">Expand your vocabulary by building words from letter tiles under time pressure.</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Best Score: 3,220</span>
+                        <span class="text-sm font-semibold text-green-600">Level 15</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: Vocabulary • Spelling • Creativity</div>
+                </div>
+
+                <!-- Logic Puzzles Game -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg" onclick="startGame('logic')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">🧩</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Logic Puzzles</h3>
+                    <p class="text-gray-600 mb-6">Solve visual logic problems with drag-and-drop solutions and pattern reasoning.</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Best Score: 1,740</span>
+                        <span class="text-sm font-semibold text-orange-600">Level 6</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: 45%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: Logic • Reasoning • Problem Solving</div>
+                </div>
+
+                <!-- Focus Training Game -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg" onclick="startGame('focus')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">🎯</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Focus Training</h3>
+                    <p class="text-gray-600 mb-6">Improve concentration and attention span with distraction management exercises.</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Best Score: 2,180</span>
+                        <span class="text-sm font-semibold text-indigo-600">Level 10</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="bg-indigo-500 h-2 rounded-full" style="width: 70%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: Attention • Concentration • Mental Clarity</div>
+                </div>
+
+                <!-- Daily Challenge -->
+                <div class="game-card bg-white rounded-2xl p-8 shadow-lg border-4 border-yellow-400" onclick="startGame('daily')">
+                    <div class="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-white text-2xl">🏆</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Daily Challenge</h3>
+                    <p class="text-gray-600 mb-6">Today's special challenge combining multiple cognitive skills for bonus rewards!</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-gray-500">Bonus: +100 XP</span>
+                        <span class="text-sm font-semibold text-yellow-600">Special</span>
+                    </div>
+                    <div class="w-full bg-yellow-200 rounded-full h-2 mb-4">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <div class="text-sm text-gray-500">Focus: All Skills • Bonus Rewards • Daily</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory Palace Game -->
+    <section id="memory-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Memory Palace</h2>
+                        <p class="text-gray-600">Memorize the pattern sequence</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-purple-600" id="memory-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <div class="text-center mb-4">
+                        <span class="text-lg font-semibold text-gray-700">Level: </span>
+                        <span id="memory-level" class="text-lg font-bold text-purple-600">1</span>
+                    </div>
+                    
+                    <!-- Game Grid -->
+                    <div id="memory-grid" class="grid grid-cols-4 gap-4 max-w-md mx-auto mb-8">
+                        <!-- Cards will be generated by JavaScript -->
+                    </div>
+                    
+                    <!-- Game Controls -->
+                    <div class="text-center space-x-4">
+                        <button id="memory-start" onclick="startMemoryGame()" class="px-8 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors">
+                            Start Game
+                        </button>
+                        <button id="memory-back" onclick="backToSelection()" class="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-purple-50 rounded-xl p-6">
+                    <h4 class="font-semibold text-purple-900 mb-2">How to Play:</h4>
+                    <ul class="text-purple-800 space-y-1 text-sm">
+                        <li>• Watch the sequence of highlighted cards</li>
+                        <li>• Memorize the pattern and order</li>
+                        <li>• Click the cards in the same sequence</li>
+                        <li>• Each correct sequence increases the difficulty</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Speed Math Game -->
+    <section id="math-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Speed Math</h2>
+                        <p class="text-gray-600">Solve equations as fast as you can</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-blue-600" id="math-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8 text-center">
+                    <div class="mb-4">
+                        <span class="text-lg font-semibold text-gray-700">Time: </span>
+                        <span id="math-timer" class="text-lg font-bold text-blue-600">60</span>
+                        <span class="text-lg font-semibold text-gray-700">s</span>
+                    </div>
+                    
+                    <!-- Math Problem -->
+                    <div class="math-problem" id="math-problem">15 + 27 = ?</div>
+                    
+                    <!-- Answer Input -->
+                    <input type="number" id="math-answer" class="answer-input" placeholder="?" onkeyup="checkMathAnswer(event)">
+                    
+                    <!-- Game Controls -->
+                    <div class="mt-8 space-x-4">
+                        <button id="math-start" onclick="startMathGame()" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+                            Start Game
+                        </button>
+                        <button onclick="backToSelection()" class="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-blue-50 rounded-xl p-6">
+                    <h4 class="font-semibold text-blue-900 mb-2">How to Play:</h4>
+                    <ul class="text-blue-800 space-y-1 text-sm">
+                        <li>• Solve math problems as quickly as possible</li>
+                        <li>• Type your answer and press Enter</li>
+                        <li>• Correct answers earn points and extend time</li>
+                        <li>• Problems get harder as you progress</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Word Builder Game -->
+    <section id="words-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Word Builder</h2>
+                        <p class="text-gray-600">Create words from letter tiles</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-green-600" id="words-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <!-- Target Word Display -->
+                    <div class="text-center mb-6">
+                        <div class="text-lg font-semibold text-gray-700 mb-2">Target Word:</div>
+                        <div id="word-slots" class="flex justify-center space-x-2 mb-4">
+                            <!-- Word slots will be generated by JavaScript -->
+                        </div>
+                        <div class="text-sm text-gray-500" id="word-hint">Hint: A type of fruit (6 letters)</div>
+                    </div>
+                    
+                    <!-- Letter Tiles -->
+                    <div id="letter-tiles" class="flex justify-center flex-wrap gap-3 max-w-2xl mx-auto mb-8">
+                        <!-- Letter tiles will be generated by JavaScript -->
+                    </div>
+                    
+                    <!-- Current Word -->
+                    <div class="text-center mb-4">
+                        <div class="text-sm text-gray-600 mb-2">Your word:</div>
+                        <div id="current-word" class="text-xl font-bold text-gray-900 min-h-[2rem]"></div>
+                    </div>
+                    
+                    <!-- Game Controls -->
+                    <div class="text-center space-x-4">
+                        <button onclick="clearWord()" class="px-6 py-2 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-colors">
+                            Clear
+                        </button>
+                        <button onclick="submitWord()" class="px-6 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors">
+                            Submit Word
+                        </button>
+                        <button onclick="backToSelection()" class="px-6 py-2 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-green-50 rounded-xl p-6">
+                    <h4 class="font-semibold text-green-900 mb-2">How to Play:</h4>
+                    <ul class="text-green-800 space-y-1 text-sm">
+                        <li>• Click letter tiles to build words</li>
+                        <li>• Use all letters to form the target word</li>
+                        <li>• Longer words earn more points</li>
+                        <li>• Complete words quickly for bonus points</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logic Puzzles Game -->
+    <section id="logic-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Logic Puzzles</h2>
+                        <p class="text-gray-600">Solve visual pattern problems</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-orange-600" id="logic-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8 text-center">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Complete the Pattern:</h3>
+                        <div id="logic-pattern" class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
+                            <!-- Pattern will be generated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Answer Options -->
+                    <div id="logic-options" class="flex justify-center space-x-4 mb-8">
+                        <!-- Options will be generated by JavaScript -->
+                    </div>
+                    
+                    <!-- Game Controls -->
+                    <div class="text-center space-x-4">
+                        <button onclick="nextLogicPuzzle()" class="px-8 py-3 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors">
+                            Next Puzzle
+                        </button>
+                        <button onclick="backToSelection()" class="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-orange-50 rounded-xl p-6">
+                    <h4 class="font-semibold text-orange-900 mb-2">How to Play:</h4>
+                    <ul class="text-orange-800 space-y-1 text-sm">
+                        <li>• Study the pattern in the grid</li>
+                        <li>• Identify the missing piece</li>
+                        <li>• Click the correct answer from options</li>
+                        <li>• Patterns get more complex as you progress</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Focus Training Game -->
+    <section id="focus-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Focus Training</h2>
+                        <p class="text-gray-600">Maintain concentration amidst distractions</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-indigo-600" id="focus-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8 text-center">
+                    <div class="mb-6">
+                        <div class="text-lg font-semibold text-gray-700 mb-2">Focus Time: <span id="focus-time">0</span>s</div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 max-w-md mx-auto mb-4">
+                            <div id="focus-bar" class="bg-indigo-500 h-4 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Target Circle -->
+                    <div class="relative inline-block mb-8">
+                        <div id="focus-target" class="w-32 h-32 rounded-full border-4 border-indigo-500 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105">
+                            <span class="text-2xl">🎯</span>
+                        </div>
+                        <!-- Distraction Elements -->
+                        <div id="distractions-container" class="absolute inset-0 pointer-events-none">
+                            <!-- Distractions will be added by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Game Controls -->
+                    <div class="text-center space-x-4">
+                        <button id="focus-start" onclick="startFocusGame()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                            Start Training
+                        </button>
+                        <button onclick="backToSelection()" class="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-indigo-50 rounded-xl p-6">
+                    <h4 class="font-semibold text-indigo-900 mb-2">How to Play:</h4>
+                    <ul class="text-indigo-800 space-y-1 text-sm">
+                        <li>• Keep your attention on the target circle</li>
+                        <li>• Ignore distracting elements that appear</li>
+                        <li>• Stay focused for as long as possible</li>
+                        <li>• Score increases with sustained attention</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Daily Challenge Game -->
+    <section id="daily-game" class="game-container py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl p-8 shadow-lg border-4 border-yellow-400">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900">Daily Challenge</h2>
+                        <p class="text-gray-600">Today's special combination challenge</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-yellow-600" id="daily-score">0</div>
+                        <div class="text-sm text-gray-500">Score</div>
+                    </div>
+                </div>
+                
+                <div class="mb-8 text-center">
+                    <div class="bg-yellow-50 rounded-xl p-6 mb-6">
+                        <h3 class="text-xl font-bold text-yellow-900 mb-2">Today's Challenge: Memory + Math Combo</h3>
+                        <p class="text-yellow-800">First memorize a number sequence, then solve math problems using those numbers!</p>
+                    </div>
+                    
+                    <!-- Challenge Content -->
+                    <div id="daily-content" class="mb-8">
+                        <!-- Content will be generated by JavaScript -->
+                    </div>
+                    
+                    <!-- Game Controls -->
+                    <div class="text-center space-x-4">
+                        <button id="daily-start" onclick="startDailyChallenge()" class="px-8 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-colors">
+                            Start Challenge
+                        </button>
+                        <button onclick="backToSelection()" class="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                            Back to Games
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Special Bonus Info -->
+                <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-6 text-white text-center">
+                    <h4 class="font-bold text-xl mb-2">🎁 Special Bonus</h4>
+                    <p class="mb-2">Complete today's challenge to earn:</p>
+                    <div class="flex justify-center space-x-6 text-sm">
+                        <div>+100 XP</div>
+                        <div>🔥 Streak Bonus</div>
+                        <div>🏆 Achievement</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+            <div class="text-6xl mb-4">🎉</div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Great Job!</h3>
+            <p id="game-over-message" class="text-gray-600 mb-6">You scored 1,250 points!</p>
+            <div class="bg-green-50 rounded-xl p-4 mb-6">
+                <div class="text-2xl font-bold text-green-600" id="game-xp-earned">+25 XP</div>
+                <div class="text-sm text-green-700">Experience Points Earned</div>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="restartCurrentGame()" class="flex-1 bg-secondary text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors">
+                    Play Again
+                </button>
+                <button onclick="backToSelection()" class="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+                    Back to Games
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Brain Games Application
+        class BrainGamesApp {
+            constructor() {
+                this.currentGame = null;
+                this.gameState = {
+                    score: 0,
+                    streak: 0,
+                    level: 1,
+                    timeLeft: 0
+                };
+                this.memoryGame = {
+                    sequence: [],
+                    playerSequence: [],
+                    showingSequence: false,
+                    level: 1
+                };
+                this.mathGame = {
+                    currentProblem: null,
+                    timeLimit: 60,
+                    timer: null
+                };
+                this.wordsGame = {
+                    targetWord: '',
+                    currentWord: '',
+                    availableLetters: []
+                };
+                this.logicGame = {
+                    currentPuzzle: null,
+                    patterns: [
+                        ['🔴', '🔵', '🔴', '🔵', '🔴', '❓', '🔵', '🔴'],
+                        ['⭐', '⭐', '🌙', '⭐', '⭐', '❓', '⭐', '⭐'],
+                        ['🟦', '🟨', '🟦', '🟨', '🟦', '❓', '🟨', '🟦'],
+                        ['🔺', '🔸', '🔺', '🔸', '🔺', '❓', '🔸', '🔺']
+                    ]
+                };
+                this.focusGame = {
+                    isActive: false,
+                    startTime: 0,
+                    distractions: [],
+                    distractionTimer: null
+                };
+                this.dailyChallenge = {
+                    stage: 0,
+                    memoryNumbers: [],
+                    mathProblems: []
+                };
+            }
+
+            // Game Selection
+            startGame(gameType) {
+                this.currentGame = gameType;
+                document.getElementById('game-selection').style.display = 'none';
+                document.getElementById(`${gameType}-game`).classList.add('active');
+                
+                // Initialize specific game
+                switch(gameType) {
+                    case 'memory':
+                        this.initMemoryGame();
+                        break;
+                    case 'math':
+                        this.initMathGame();
+                        break;
+                    case 'words':
+                        this.initWordsGame();
+                        break;
+                    case 'logic':
+                        this.initLogicGame();
+                        break;
+                    case 'focus':
+                        this.initFocusGame();
+                        break;
+                    case 'daily':
+                        this.initDailyChallenge();
+                        break;
+                }
+            }
+
+            backToSelection() {
+                if (this.currentGame) {
+                    document.getElementById(`${this.currentGame}-game`).classList.remove('active');
+                }
+                document.getElementById('game-selection').style.display = 'block';
+                this.currentGame = null;
+                this.stopAllGames();
+            }
+
+            // Memory Palace Game
+            initMemoryGame() {
+                this.memoryGame = {
+                    sequence: [],
+                    playerSequence: [],
+                    showingSequence: false,
+                    level: 1
+                };
+                this.createMemoryGrid();
+            }
+
+            createMemoryGrid() {
+                const grid = document.getElementById('memory-grid');
+                grid.innerHTML = '';
+                
+                for (let i = 0; i < 16; i++) {
+                    const card = document.createElement('div');
+                    card.className = 'memory-card';
+                    card.textContent = i + 1;
+                    card.onclick = () => this.clickMemoryCard(i);
+                    grid.appendChild(card);
+                }
+            }
+
+            startMemoryGame() {
+                this.generateMemorySequence();
+                this.showMemorySequence();
+            }
+
+            generateMemorySequence() {
+                this.memoryGame.sequence = [];
+                const sequenceLength = Math.min(3 + this.memoryGame.level, 8);
+                
+                for (let i = 0; i < sequenceLength; i++) {
+                    this.memoryGame.sequence.push(Math.floor(Math.random() * 16));
+                }
+                this.memoryGame.playerSequence = [];
+            }
+
+            showMemorySequence() {
+                this.memoryGame.showingSequence = true;
+                const cards = document.querySelectorAll('.memory-card');
+                let index = 0;
+                
+                const showNext = () => {
+                    if (index < this.memoryGame.sequence.length) {
+                        const cardIndex = this.memoryGame.sequence[index];
+                        const card = cards[cardIndex];
+                        
+                        // Highlight card
+                        card.style.background = '#3b82f6';
+                        card.style.transform = 'scale(1.1)';
+                        
+                        setTimeout(() => {
+                            card.style.background = '';
+                            card.style.transform = '';
+                            index++;
+                            setTimeout(showNext, 300);
+                        }, 500);
+                    } else {
+                        this.memoryGame.showingSequence = false;
+                    }
+                };
+                
+                setTimeout(showNext, 1000);
+            }
+
+            clickMemoryCard(index) {
+                if (this.memoryGame.showingSequence) return;
+                
+                const cards = document.querySelectorAll('.memory-card');
+                const card = cards[index];
+                
+                this.memoryGame.playerSequence.push(index);
+                
+                // Visual feedback
+                card.style.background = '#f59e0b';
+                setTimeout(() => {
+                    card.style.background = '';
+                }, 200);
+                
+                // Check if sequence is complete
+                if (this.memoryGame.playerSequence.length === this.memoryGame.sequence.length) {
+                    this.checkMemorySequence();
+                }
+            }
+
+            checkMemorySequence() {
+                const correct = this.memoryGame.sequence.every((val, i) => val === this.memoryGame.playerSequence[i]);
+                
+                if (correct) {
+                    this.addScore(100 * this.memoryGame.level);
+                    this.memoryGame.level++;
+                    this.updateGameDisplay('memory');
+                    this.createParticles();
+                    
+                    setTimeout(() => {
+                        this.generateMemorySequence();
+                        this.showMemorySequence();
+                    }, 1000);
+                } else {
+                    this.endGame('Memory Palace', this.gameState.score);
+                }
+            }
+
+            // Speed Math Game
+            initMathGame() {
+                this.mathGame = {
+                    currentProblem: null,
+                    timeLimit: 60,
+                    timer: null
+                };
+                this.generateMathProblem();
+            }
+
+            startMathGame() {
+                this.gameState.timeLeft = this.mathGame.timeLimit;
+                this.updateGameDisplay('math');
+                
+                this.mathGame.timer = setInterval(() => {
+                    this.gameState.timeLeft--;
+                    this.updateGameDisplay('math');
+                    
+                    if (this.gameState.timeLeft <= 0) {
+                        this.endGame('Speed Math', this.gameState.score);
+                    }
+                }, 1000);
+                
+                document.getElementById('math-answer').focus();
+            }
+
+            generateMathProblem() {
+                const operations = ['+', '-', '*'];
+                const operation = operations[Math.floor(Math.random() * operations.length)];
+                let a, b, answer;
+                
+                switch(operation) {
+                    case '+':
+                        a = Math.floor(Math.random() * 50) + 1;
+                        b = Math.floor(Math.random() * 50) + 1;
+                        answer = a + b;
+                        break;
+                    case '-':
+                        a = Math.floor(Math.random() * 50) + 25;
+                        b = Math.floor(Math.random() * a);
+                        answer = a - b;
+                        break;
+                    case '*':
+                        a = Math.floor(Math.random() * 12) + 1;
+                        b = Math.floor(Math.random() * 12) + 1;
+                        answer = a * b;
+                        break;
+                }
+                
+                this.mathGame.currentProblem = { a, b, operation, answer };
+                document.getElementById('math-problem').textContent = `${a} ${operation} ${b} = ?`;
+                document.getElementById('math-answer').value = '';
+            }
+
+            checkMathAnswer(event) {
+                if (event.key === 'Enter') {
+                    const userAnswer = parseInt(event.target.value);
+                    const correct = userAnswer === this.mathGame.currentProblem.answer;
+                    
+                    if (correct) {
+                        this.addScore(50 + this.gameState.level * 10);
+                        this.gameState.level++;
+                        this.generateMathProblem();
+                        this.createParticles();
+                        
+                        // Add time bonus
+                        this.gameState.timeLeft = Math.min(this.gameState.timeLeft + 5, this.mathGame.timeLimit);
+                    } else {
+                        event.target.classList.add('incorrect');
+                        setTimeout(() => {
+                            event.target.classList.remove('incorrect');
+                        }, 500);
+                    }
+                }
+            }
+
+            // Word Builder Game
+            initWordsGame() {
+                this.wordsGame = {
+                    targetWord: '',
+                    currentWord: '',
+                    availableLetters: []
+                };
+                this.generateWordPuzzle();
+            }
+
+            generateWordPuzzle() {
+                const words = [
+                    { word: 'ORANGE', hint: 'A citrus fruit (6 letters)' },
+                    { word: 'BANANA', hint: 'Yellow curved fruit (6 letters)' },
+                    { word: 'APPLE', hint: 'Red or green fruit (5 letters)' },
+                    { word: 'GRAPE', hint: 'Small purple fruit (5 letters)' },
+                    { word: 'LEMON', hint: 'Sour yellow fruit (5 letters)' }
+                ];
+                
+                const selected = words[Math.floor(Math.random() * words.length)];
+                this.wordsGame.targetWord = selected.word;
+                
+                // Create letter tiles
+                const letters = selected.word.split('');
+                const shuffled = [...letters, ...this.getRandomLetters(8 - letters.length)]
+                    .sort(() => Math.random() - 0.5);
+                
+                this.wordsGame.availableLetters = shuffled;
+                this.wordsGame.currentWord = '';
+                
+                this.createWordTiles();
+                this.createWordSlots();
+                
+                document.getElementById('word-hint').textContent = `Hint: ${selected.hint}`;
+                document.getElementById('current-word').textContent = '';
+            }
+
+            getRandomLetters(count) {
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const result = [];
+                for (let i = 0; i < count; i++) {
+                    result.push(letters[Math.floor(Math.random() * letters.length)]);
+                }
+                return result;
+            }
+
+            createWordTiles() {
+                const container = document.getElementById('letter-tiles');
+                container.innerHTML = '';
+                
+                this.wordsGame.availableLetters.forEach((letter, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'letter-tile';
+                    tile.textContent = letter;
+                    tile.onclick = () => this.selectLetter(letter, index, tile);
+                    container.appendChild(tile);
+                });
+            }
+
+            createWordSlots() {
+                const container = document.getElementById('word-slots');
+                container.innerHTML = '';
+                
+                for (let i = 0; i < this.wordsGame.targetWord.length; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'word-slot';
+                    container.appendChild(slot);
+                }
+            }
+
+            selectLetter(letter, index, tile) {
+                if (tile.classList.contains('used')) return;
+                
+                this.wordsGame.currentWord += letter;
+                tile.classList.add('used');
+                
+                // Update display
+                document.getElementById('current-word').textContent = this.wordsGame.currentWord;
+                
+                // Fill next slot
+                const slots = document.querySelectorAll('.word-slot');
+                const nextSlot = Array.from(slots).find(slot => !slot.classList.contains('filled'));
+                if (nextSlot) {
+                    nextSlot.textContent = letter;
+                    nextSlot.classList.add('filled');
+                }
+                
+                // Check if word is complete
+                if (this.wordsGame.currentWord.length === this.wordsGame.targetWord.length) {
+                    this.checkWord();
+                }
+            }
+
+            checkWord() {
+                const correct = this.wordsGame.currentWord === this.wordsGame.targetWord;
+                
+                if (correct) {
+                    this.addScore(200 + this.gameState.level * 50);
+                    this.gameState.level++;
+                    this.createParticles();
+                    
+                    setTimeout(() => {
+                        this.generateWordPuzzle();
+                    }, 1500);
+                } else {
+                    // Show incorrect feedback
+                    document.getElementById('current-word').style.color = '#ef4444';
+                    setTimeout(() => {
+                        this.clearWord();
+                        document.getElementById('current-word').style.color = '';
+                    }, 1000);
+                }
+            }
+
+            clearWord() {
+                this.wordsGame.currentWord = '';
+                document.getElementById('current-word').textContent = '';
+                
+                // Reset tiles
+                document.querySelectorAll('.letter-tile').forEach(tile => {
+                    tile.classList.remove('used');
+                });
+                
+                // Reset slots
+                document.querySelectorAll('.word-slot').forEach(slot => {
+                    slot.textContent = '';
+                    slot.classList.remove('filled');
+                });
+            }
+
+            submitWord() {
+                this.checkWord();
+            }
+
+            // Logic Puzzles Game
+            initLogicGame() {
+                this.generateLogicPuzzle();
+            }
+
+            generateLogicPuzzle() {
+                const patternIndex = Math.floor(Math.random() * this.logicGame.patterns.length);
+                const pattern = this.logicGame.patterns[patternIndex];
+                
+                // Create pattern display
+                const container = document.getElementById('logic-pattern');
+                container.innerHTML = '';
+                
+                pattern.forEach((item, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center text-2xl';
+                    cell.textContent = item;
+                    if (item === '❓') {
+                        cell.classList.add('bg-yellow-100', 'border-yellow-400');
+                    }
+                    container.appendChild(cell);
+                });
+                
+                // Generate answer options
+                this.generateLogicOptions(pattern, patternIndex);
+            }
+
+            generateLogicOptions(pattern, patternIndex) {
+                const correctAnswer = this.getCorrectAnswer(patternIndex);
+                const options = [correctAnswer];
+                
+                // Add some wrong options
+                const wrongOptions = ['🔴', '🔵', '⭐', '🌙', '🟦', '🟨', '🔺', '🔸'];
+                wrongOptions.forEach(option => {
+                    if (option !== correctAnswer && options.length < 4) {
+                        options.push(option);
+                    }
+                });
+                
+                // Shuffle options
+                options.sort(() => Math.random() - 0.5);
+                
+                // Create option buttons
+                const container = document.getElementById('logic-options');
+                container.innerHTML = '';
+                
+                options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.className = 'w-16 h-16 border-2 border-gray-300 rounded-lg text-2xl hover:border-blue-500 transition-colors';
+                    button.textContent = option;
+                    button.onclick = () => this.selectLogicAnswer(option, correctAnswer);
+                    container.appendChild(button);
+                });
+            }
+
+            getCorrectAnswer(patternIndex) {
+                const answers = ['🔴', '⭐', '🟦', '🔺'];
+                return answers[patternIndex] || '🔴';
+            }
+
+            selectLogicAnswer(selected, correct) {
+                if (selected === correct) {
+                    this.addScore(150 + this.gameState.level * 25);
+                    this.gameState.level++;
+                    this.createParticles();
+                    
+                    setTimeout(() => {
+                        this.generateLogicPuzzle();
+                    }, 1000);
+                } else {
+                    // Show incorrect feedback
+                    this.endGame('Logic Puzzles', this.gameState.score);
+                }
+            }
+
+            nextLogicPuzzle() {
+                this.generateLogicPuzzle();
+            }
+
+            // Focus Training Game
+            initFocusGame() {
+                this.focusGame = {
+                    isActive: false,
+                    startTime: 0,
+                    distractions: [],
+                    distractionTimer: null
+                };
+            }
+
+            startFocusGame() {
+                this.focusGame.isActive = true;
+                this.focusGame.startTime = Date.now();
+                
+                // Hide start button
+                document.getElementById('focus-start').style.display = 'none';
+                
+                // Start focus tracking
+                this.updateFocusGame();
+                
+                // Start distractions
+                this.startDistractions();
+            }
+
+            updateFocusGame() {
+                if (!this.focusGame.isActive) return;
+                
+                const elapsed = Math.floor((Date.now() - this.focusGame.startTime) / 1000);
+                document.getElementById('focus-time').textContent = elapsed;
+                
+                // Update progress bar
+                const progress = Math.min((elapsed / 60) * 100, 100);
+                document.getElementById('focus-bar').style.width = `${progress}%`;
+                
+                // Add score based on focus time
+                if (elapsed % 5 === 0 && elapsed > 0) {
+                    this.addScore(50);
+                }
+                
+                // End game after 60 seconds
+                if (elapsed >= 60) {
+                    this.endFocusGame();
+                } else {
+                    requestAnimationFrame(() => this.updateFocusGame());
+                }
+            }
+
+            startDistractions() {
+                this.focusGame.distractionTimer = setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        this.createDistraction();
+                    }
+                }, 2000);
+            }
+
+            createDistraction() {
+                const container = document.getElementById('distractions-container');
+                const distraction = document.createElement('div');
+                distraction.className = 'absolute text-2xl animate-bounce';
+                distraction.style.left = Math.random() * 100 + '%';
+                distraction.style.top = Math.random() * 100 + '%';
+                distraction.textContent = ['🎪', '🎭', '🎨', '🎯', '🎲', '🎸'][Math.floor(Math.random() * 6)];
+                
+                container.appendChild(distraction);
+                
+                // Remove after 2 seconds
+                setTimeout(() => {
+                    if (distraction.parentElement) {
+                        distraction.remove();
+                    }
+                }, 2000);
+            }
+
+            endFocusGame() {
+                this.focusGame.isActive = false;
+                clearInterval(this.focusGame.distractionTimer);
+                this.endGame('Focus Training', this.gameState.score);
+            }
+
+            // Daily Challenge
+            initDailyChallenge() {
+                this.dailyChallenge = {
+                    stage: 0,
+                    memoryNumbers: [],
+                    mathProblems: []
+                };
+                this.generateDailyChallenge();
+            }
+
+            generateDailyChallenge() {
+                // Generate memory numbers
+                this.dailyChallenge.memoryNumbers = [];
+                for (let i = 0; i < 5; i++) {
+                    this.dailyChallenge.memoryNumbers.push(Math.floor(Math.random() * 20) + 1);
+                }
+                
+                // Generate math problems using those numbers
+                this.dailyChallenge.mathProblems = [];
+                for (let i = 0; i < 3; i++) {
+                    const a = this.dailyChallenge.memoryNumbers[i];
+                    const b = this.dailyChallenge.memoryNumbers[i + 1];
+                    this.dailyChallenge.mathProblems.push({
+                        problem: `${a} + ${b}`,
+                        answer: a + b
+                    });
+                }
+            }
+
+            startDailyChallenge() {
+                this.dailyChallenge.stage = 0;
+                this.showMemoryStage();
+            }
+
+            showMemoryStage() {
+                const content = document.getElementById('daily-content');
+                content.innerHTML = `
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Memorize these numbers:</h3>
+                        <div class="flex justify-center space-x-4 mb-6">
+                            ${this.dailyChallenge.memoryNumbers.map(num => 
+                                `<div class="w-16 h-16 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">${num}</div>`
+                            ).join('')}
+                        </div>
+                        <div class="text-sm text-gray-600">You have 10 seconds to memorize...</div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    this.showMathStage();
+                }, 10000);
+            }
+
+            showMathStage() {
+                const content = document.getElementById('daily-content');
+                const currentProblem = this.dailyChallenge.mathProblems[this.dailyChallenge.stage];
+                
+                content.innerHTML = `
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Using the numbers you memorized:</h3>
+                        <div class="text-2xl font-bold text-gray-900 mb-4">${currentProblem.problem} = ?</div>
+                        <input type="number" id="daily-answer" class="answer-input" placeholder="?" onkeyup="checkDailyAnswer(event)">
+                    </div>
+                `;
+                
+                document.getElementById('daily-answer').focus();
+            }
+
+            checkDailyAnswer(event) {
+                if (event.key === 'Enter') {
+                    const userAnswer = parseInt(event.target.value);
+                    const currentProblem = this.dailyChallenge.mathProblems[this.dailyChallenge.stage];
+                    
+                    if (userAnswer === currentProblem.answer) {
+                        this.addScore(200);
+                        this.dailyChallenge.stage++;
+                        
+                        if (this.dailyChallenge.stage < this.dailyChallenge.mathProblems.length) {
+                            setTimeout(() => {
+                                this.showMathStage();
+                            }, 500);
+                        } else {
+                            this.completeDailyChallenge();
+                        }
+                    } else {
+                        this.endGame('Daily Challenge', this.gameState.score);
+                    }
+                }
+            }
+
+            completeDailyChallenge() {
+                this.addScore(500); // Bonus for completing
+                this.createParticles();
+                
+                setTimeout(() => {
+                    this.endGame('Daily Challenge', this.gameState.score, true);
+                }, 1000);
+            }
+
+            // Utility Functions
+            addScore(points) {
+                this.gameState.score += points;
+                this.gameState.streak++;
+                
+                // Update display
+                if (this.currentGame) {
+                    this.updateGameDisplay(this.currentGame);
+                }
+                
+                // Animate score
+                const scoreElement = document.getElementById(`${this.currentGame}-score`) || 
+                                   document.getElementById('current-score');
+                if (scoreElement) {
+                    scoreElement.classList.add('score-animation');
+                    setTimeout(() => {
+                        scoreElement.classList.remove('score-animation');
+                    }, 300);
+                }
+            }
+
+            updateGameDisplay(gameType) {
+                const scoreElement = document.getElementById(`${gameType}-score`);
+                if (scoreElement) {
+                    scoreElement.textContent = this.gameState.score;
+                }
+                
+                // Update streak display
+                const streakElement = document.getElementById('streak-count');
+                if (streakElement) {
+                    streakElement.textContent = this.gameState.streak;
+                }
+                
+                // Update level display
+                const levelElement = document.getElementById(`${gameType}-level`) || 
+                                   document.getElementById('level-display');
+                if (levelElement) {
+                    levelElement.textContent = this.gameState.level;
+                }
+                
+                // Update timer if applicable
+                const timerElement = document.getElementById(`${gameType}-timer`);
+                if (timerElement && this.gameState.timeLeft > 0) {
+                    timerElement.textContent = this.gameState.timeLeft;
+                }
+            }
+
+            createParticles() {
+                const container = document.querySelector('.game-container.active');
+                if (!container) return;
+                
+                for (let i = 0; i < 10; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    
+                    container.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentElement) {
+                            particle.remove();
+                        }
+                    }, 2000);
+                }
+            }
+
+            endGame(gameName, finalScore, isDaily = false) {
+                this.stopAllGames();
+                
+                const modal = document.getElementById('game-over-modal');
+                const message = document.getElementById('game-over-message');
+                const xpElement = document.getElementById('game-xp-earned');
+                
+                message.textContent = `You scored ${finalScore} points in ${gameName}!`;
+                
+                const xpGained = Math.floor(finalScore / 50) + (isDaily ? 100 : 0);
+                xpElement.textContent = `+${xpGained} XP`;
+                
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                // Animate in
+                anime({
+                    targets: modal.querySelector('.bg-white'),
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutBack'
+                });
+            }
+
+            restartCurrentGame() {
+                const modal = document.getElementById('game-over-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                
+                this.gameState = {
+                    score: 0,
+                    streak: 0,
+                    level: 1,
+                    timeLeft: 0
+                };
+                
+                if (this.currentGame) {
+                    this.startGame(this.currentGame);
+                }
+            }
+
+            stopAllGames() {
+                // Clear all timers
+                if (this.mathGame.timer) {
+                    clearInterval(this.mathGame.timer);
+                }
+                if (this.focusGame.distractionTimer) {
+                    clearInterval(this.focusGame.distractionTimer);
+                }
+                if (this.focusGame.isActive) {
+                    this.focusGame.isActive = false;
+                }
+            }
+        }
+
+        // Global functions
+        let brainGamesApp;
+
+        function startGame(gameType) {
+            brainGamesApp.startGame(gameType);
+        }
+
+        function backToSelection() {
+            brainGamesApp.backToSelection();
+        }
+
+        function startMemoryGame() {
+            brainGamesApp.startMemoryGame();
+        }
+
+        function startMathGame() {
+            brainGamesApp.startMathGame();
+        }
+
+        function checkMathAnswer(event) {
+            brainGamesApp.checkMathAnswer(event);
+        }
+
+        function clearWord() {
+            brainGamesApp.clearWord();
+        }
+
+        function submitWord() {
+            brainGamesApp.submitWord();
+        }
+
+        function nextLogicPuzzle() {
+            brainGamesApp.nextLogicPuzzle();
+        }
+
+        function startFocusGame() {
+            brainGamesApp.startFocusGame();
+        }
+
+        function startDailyChallenge() {
+            brainGamesApp.startDailyChallenge();
+        }
+
+        function checkDailyAnswer(event) {
+            brainGamesApp.checkDailyAnswer(event);
+        }
+
+        function restartCurrentGame() {
+            brainGamesApp.restartCurrentGame();
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            brainGamesApp = new BrainGamesApp();
+        });
+    </script>
+</body>
+</html>
